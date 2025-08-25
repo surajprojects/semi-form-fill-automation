@@ -1,20 +1,6 @@
 import { chromium } from "playwright";
 import fs from "fs";
 
-async function saveLogin() {
-    const browser = await chromium.launch({ headless: false });
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    await page.goto("url_here");
-
-    console.log("👉 Login manually, then press Enter...");
-    await new Promise<void>((resolve) => process.stdin.once("data", () => resolve()));
-
-    await context.storageState({ path: "auth.json" });
-    await browser.close();
-}
-
 async function run() {
     const ids = fs.readFileSync("ids.txt", "utf-8")
         .split(/\r?\n|,/)
@@ -92,6 +78,6 @@ async function run() {
     }
 
     await openNextId();
-}
+};
 
 run();
