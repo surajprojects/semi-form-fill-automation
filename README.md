@@ -13,9 +13,9 @@ It automates form filling, handles login with saved credentials, and manages IDs
 - Pre-fills common form fields automatically.
 - Pauses so you can manually review/edit before submitting.
 - After submission & tab close:
--- Moves processed ID from ids.txt → ids_done.txt.
--- Automatically continues with the next ID.
--- Fully automated using Playwright.
+  - Moves processed ID from ids.txt → ids_done.txt.
+  - Automatically continues with the next ID.
+  - Fully automated using Playwright.
 
 ## Tech Stack
 
@@ -26,12 +26,14 @@ It automates form filling, handles login with saved credentials, and manages IDs
 
 ## Project Structure
 
+```
 automation/
 ├── script.js        # Main automation script
 ├── ids.txt          # Input: pending IDs
 ├── ids_done.txt     # Output: processed IDs
 ├── auth.json        # Saved login state
 └── package.json
+```
 
 ## Setup & Usage
 
