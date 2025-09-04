@@ -1,6 +1,58 @@
 import { chromium } from "playwright";
 import fs from "fs";
 
+async function pickDate(page: any, inputSel: string, dateStr: string) {
+    const [dd = 16, mm = 7, yyyy = 2025] = dateStr.split("-").map(Number);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const targetHeader = `${months[mm - 1]} ${yyyy}`;
+    const widget = page.locator('.vdp-datepicker').filter({ has: page.locator(inputSel) });
+    await page.click(inputSel);
+    const dayCal = widget.locator(
+        '.vdp-datepicker__calendar:not([style*="display: none"]):has(header .day__month_btn)'
+    );
+    await dayCal.waitFor();
+    const calRoot = await dayCal.elementHandle();
+    if (!calRoot) throw new Error('Calendar root not found');
+
+    let guard = 240;
+    while (guard-- > 0) {
+        const headerLoc = dayCal.locator('header .day__month_btn');
+        const header = (await headerLoc.innerText()).trim();
+        if (header === targetHeader) break;
+
+        const [curMonStr, curYearStr] = header.split(' ');
+        const curIdx = months.indexOf(curMonStr);
+        const curYear = parseInt(curYearStr, 10);
+
+        const goPrev = curYear > yyyy || (curYear === yyyy && curIdx > (mm - 1));
+        const prevText = header;
+
+        if (goPrev) {
+            await dayCal.locator('header .prev').click();
+        } else {
+            const nextBtn = dayCal.locator('header .next:not(.disabled)');
+            if (await nextBtn.count() === 0) throw new Error('Next disabled; cannot move forward');
+            await nextBtn.click();
+        }
+
+        await page.waitForFunction(
+            (root: any, prev: any) => {
+                const el = root.querySelector('header .day__month_btn');
+                return !!el && el.textContent && el.textContent.trim() !== prev;
+            },
+            calRoot,
+            prevText
+        );
+    }
+
+    const finalHeader = (await dayCal.locator('header .day__month_btn').innerText()).trim();
+    if (finalHeader !== targetHeader) {
+        throw new Error(`Failed to reach target month: wanted "${targetHeader}", got "${finalHeader}"`);
+    }
+
+    await dayCal.locator(`.cell.day:not(.disabled):has-text("${dd}")`).click();
+};
+
 async function run() {
     const ids = fs.readFileSync("ids.txt", "utf-8")
         .split(/\r?\n|,/)
@@ -40,6 +92,9 @@ async function run() {
         // wait for site to load
         await page.waitForLoadState("networkidle");
 
+        const card = page.locator('.card');
+        const locationText = await card.locator('div:has-text("Location(TU):") span').innerText();
+
         await page.waitForSelector("#ReasonForTesting");
         await page.selectOption("#ReasonForTesting", "Diagnosis of TB");
 
@@ -59,6 +114,15 @@ async function run() {
 
         await page.waitForSelector("#FinalInterpretation");
         await page.selectOption("#FinalInterpretation", "Not Suggestive of TB");
+
+        if (locationText === "Sheopur DTC") {
+            await page.fill('input[placeholder="Select Testing Lab"]', "DH Sheopur");
+            await page.waitForSelector('.vs__dropdown-menu li:not(.vs__no-options)');
+            await page.locator('.vs__dropdown-menu li:not(.vs__no-options)').first().click();
+        }
+
+        await page.waitForSelector("#ResultDateReported");
+        await pickDate(page, "#ResultDateReported", "15-07-2025");
 
         console.log(`Opened ID: ${id}`);
 
