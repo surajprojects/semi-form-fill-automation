@@ -7,20 +7,19 @@ async function saveLogin() {
 
     await page.goto("url_here");
 
-    console.log("👉 Login manually, then press Enter in terminal...");
-    await new Promise<void>((resolve) => {
-        process.stdin.once("data", () => {
-            process.stdin.pause();
-            resolve();
-        });
-    });
+    console.log("Login manually, Close the browser after logging in.");
 
-    try {
-        await context.storageState({ path: "auth.json" });
-        await browser.close();
-    } catch (err) {
-        console.log("⚠️ Browser was closed before saving auth:", err);
-    }
+    // When the page is closed, save storage state
+    page.on("close", async () => {
+        try {
+            await context.storageState({ path: "auth.json" });
+            console.log("Auth saved to auth.json");
+        } catch (err) {
+            console.error("Failed to save auth:", err);
+        } finally {
+            await browser.close();
+        }
+    });
 };
 
 saveLogin();
