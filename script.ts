@@ -86,6 +86,33 @@ async function run() {
 
         console.log(`Opened ID: ${id}`);
 
+        try {
+            const toast = await page.waitForSelector(".toast-message", {
+                timeout: 60000, // wait up to 60s
+            });
+
+            const toastText = await toast.innerText();
+
+            if (toastText.includes("Saved successfully!")) {
+                console.log("✅ Form saved successfully!");
+
+                await Promise.all([
+                    page.waitForURL(/\/Dashboard\/Patient\/\d+/, { waitUntil: "domcontentloaded" }),
+                    page.click("ol.breadcrumb li.active a"),
+                ]);
+
+                await page.waitForTimeout(800);
+                await page.waitForSelector("#basicDetailsTab");
+
+                await page.waitForSelector("#closeCaseTab");
+
+                await page.waitForTimeout(1200);
+                await page.click("#closeCaseTab");
+            }
+        } catch {
+            console.log("⚠️ No toast appeared!");
+        }
+
         // When you close this tab manually, open next
         page.on("close", () => {
             // Remove the processed ID from the list
