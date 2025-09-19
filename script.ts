@@ -101,12 +101,8 @@ async function run() {
                     page.click("ol.breadcrumb li.active a"),
                 ]);
 
-                await page.waitForTimeout(800);
                 await page.waitForSelector("#basicDetailsTab");
-
                 await page.waitForSelector("#closeCaseTab");
-
-                await page.waitForTimeout(1200);
                 await page.click("#closeCaseTab");
             }
         } catch {
